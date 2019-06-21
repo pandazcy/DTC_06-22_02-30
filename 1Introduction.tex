@@ -1,0 +1,36 @@
+\section{Introduction}
+
+%\subsection{Motivation and Problem Statement}
+Traditionally, packet classification for Internet is integrated with hardware devices. Although fast, it is difficult to perform flexible and scalable packet forwarding, which is critical with the quick development of new technologies on the Internet. Software Defined Network (SDN) \cite{kuzniar2015you} has been proposed to replace hardware, which not only reduces the hardware costs but also makes the entire network more flexible and easier to manage. The standard protocol in SDN is OpenFlow \cite{mckeown2008openflow}. Although packet classification is one of the core components, it remains the bottleneck for packet forwarding.
+
+
+The packet classification mainly involves rule matching, where a rule is generally described with $d$ fields $f_1,f_2,...,f_d$. Each field $f_i$ in a rule corresponds to a range $[l_i,r_i]$. In the classic packet classification problem, the rule has five fields, containing the source IP address, the destination IP address, the source port, the destination port and the protocol. The packet header contains $d$ numbers ($p_1,p_2,...,p_d$), which correspond to $d$ fields. A packet matches a rule in a field $f_i$ if $p_i \in [l_i,r_i]$, and matches a rule if it matches all fields. If a packet can match multiple rules, the rule with the highest priority will be selected.
+
+The main challenges faced by packet classification are the lookup speed and rule update speed. Even though many solutions have been proposed, none has simultaneously achieved high speed for both lookup and update. Algorithms such as Tuple Space Search (TSS) \cite{srinivasan1999packet}, TupleMerge \cite{daly2017tuplemerge} and PartitionSort \cite{yingchareonthawornchai2016sorted} support dynamic updates and attempt to trade off between lookup speed and update speed, but neither speed is very high.
+%their lookup and update performances are still limited.
+Some decision tree methods such as ByteCuts \cite{daly2018bytecuts} and SmartSplit \cite{he2014meta} only focus on high lookup speed, but can not support dynamic updates to implement in OpenFlow. In order to simultaneously achieve high lookup speed and high update speed, we propose a Dynamic programming based Tuple Combination (DTC) for packet classification.
+
+% why to use tuple and what is tuple
+Existing algorithms that support dynamic updates divide rules into multiple groups, with each group named a tuple to contain rules of the same feature. Different algorithms form the tuple with different features and data structures. For example, the tuple in TSS stores the rules with the same source IP mask length and destination IP mask length, and uses cuckoo hash table to support updates. The tuple in TupleMerge can contain the rules with different source IP mask length and destination IP mask length, and omits the bits of the rules to store them into a cuckoo hash table. The tuple in PartitionSort stores the sortable rules and applies binary search tree to achieve logarithmic lookup and update complexity.
+
+To achieve high speed for both lookup and update, we construct tuples with new feature and new data structure in DTC. The lookup operation requires traversing the tuples to find the matching rule with the highest priority, thus its speed depends on the number of tuples
+and the time to search through the set of rules inside a tuple. Accordingly,  we propose \textit{a Mask Length Reduction (MLR) method} to reduce the number of tuples, and a priority-based data structure to further reduce the lookup time inside each tuple with four layers: tuples, buckets, slots and rules.
+
+% corresponding to section IV
+The MLR method allows a tuple to store rules with different source and destination IP mask lengths, and restricts a rule to be inserted into one tuple only. The reduction of the number of tuples with shorter mask length, however, increases the length of the rule chains thus lookup time inside a tuple. There is a need to trade off between the number of tuples and the rule lengths inside tuples, and also take into account the distribution of rules inside different tuples. To properly organize rules into tuples, we propose a dynamic programming method to reduce the average lookup time estimated based on the average number of tuples to access and the number of slots and rules to lookup inside each tuple.
+%we propose \textit{a Lookup Time Estimation method}, \rev{where the total look uptime is estimated based on the average number of tuples to access, and number of slots and rules to lookup time in each tuple. Based on the estimated lookup time,  we propose a} \textit{dynamic programming method} \rev{to divide rules into tuples} to reduce the total lookup time.
+
+% corresponding to section V
+Besides source and destination IP addresses considered conventionally  for lookup, to further enhance the lookup speed, we exploit the use of the additional three fields on the IP headers in DTC data structure: the source port, the destination port and the protocol number. We propose the search with \textit{the port hash table} and \textit{the protocol division}.
+
+% update speed
+The update operation for TSS only occurs in a specific tuple with the time increasing with the length of the rule chain, while the update operations for TupleMerge and PartitionSort need to traverse the tuples. For DTC, the MLR method reduces the number of tuples available and can map an update operation to a specific tuple. Inside a tuple, it further exploits the priority data structure and the port hash table to improve the update speed.
+% in the tuple. Therefore, DTC achieves high update speed than these algorithms.
+
+% summary
+Our experimental results demonstrate that DTC can simultaneously achieve high lookup speed and high update speed. The lookup speed of DTC is 31.5 times that of TSS, 5.2 times that of TupleMerge and 4.8 times that of PartitionSort. The look up speed of DTC can compete with the  state-of-art decision tree method, ByteCuts, while the later can not support the dynamic updates.  The update speed of DTC is 2.8 times that of TSS, 4.8 times that of TupleMerge and 5.3 times that of PartitionSort.
+
+% remaining
+The remaining of the paper is organized as follows. We first review related work in Section II. In Section III we introduce the Mask Length Reduction method and the DTC priority data structure. We then estimate the lookup time for each tuple and use dynamic programming to select a set of appropriate tuples in Section IV. In Section V, we propose two optimization methods: the port hash table and the protocol division. The experimental results are shown in Section VI. Finally, we conclude the work in Section VII.
+
+
